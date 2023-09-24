@@ -12,6 +12,7 @@ The core file is musicgen_cli.py; everyhting else is me working thruogh the proc
 
 ## To Do
 - Update requirements.txt and create install script
+- Break out model size (Small, Med, Large, Melody) to function call for easier use
 - Improve streamlit interface
 - Experiment with model params (temperature, etc)
 

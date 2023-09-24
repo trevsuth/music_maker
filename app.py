@@ -1,9 +1,7 @@
 import streamlit as st
 from transformers import AutoProcessor, MusicgenForConditionalGeneration
 import scipy.io.wavfile as wav
-import tempfile
-import io
-import numpy as np
+import os
 
 def make_audio_from_text(model_prompt, output_file='', return_token_lengh=265):
     """Makes an audio file from a text prompt.
@@ -18,29 +16,29 @@ def make_audio_from_text(model_prompt, output_file='', return_token_lengh=265):
         values will create longer music outputs, though longer files then to be
         less aurally interesting
     """
-    #declare model name
+    # Declare model name
     model_name = "facebook/musicgen-small"
     
-    #make calls to hugging face
+    # Make calls to hugging face
     processor = AutoProcessor.from_pretrained(model_name)
     model = MusicgenForConditionalGeneration.from_pretrained(model_name)
 
-    #model specific inputs
+    # Model specific inputs
     inputs = processor(
         text=[model_prompt],
         padding=True,
         return_tensors="pt",
     )
 
-    #generate audio sample
+    # Generate audio sample
     audio_values = model.generate(**inputs, max_new_tokens=return_token_lengh)
     sampling_rate = model.config.audio_encoder.sampling_rate
 
-    #If no outputfile is specified, return the audio data, otherwise save the file
+    # If no outputfile is specified, return the audio data, otherwise save the file
     if output_file=='':
         return (audio_values, sampling_rate)
     else:
-        #save return to file
+        # Save return to file
         save_wav_file(music_data=audio_values, 
                       sampling_rate=sampling_rate,
                       file_name=output_file)
@@ -59,18 +57,16 @@ def make_audio_from_sample(model_prompt, audio_sample, output_file='', return_to
         values will create longer music outputs, though longer files then to be
         less aurally interesting
     """
-    
+
+    # Declare model name    
     model="facebook/musicgen-small"
 
+    # Get model from huggung face
     processor = AutoProcessor.from_pretrained(model)
     model = MusicgenForConditionalGeneration.from_pretrained(model)
 
     # Read the .wav file
-    sampling_rate, sample = read_wav_file(audio_sample)  # replace with the path to your .wav file
-
-    # Create segments from the audio sample, e.g., first quarter and first half
-    #sample_1 = sample[: len(sample) // 4]
-    #sample_2 = sample[: len(sample) // 2]
+    sampling_rate, sample = read_wav_file(audio_sample)
 
     # Prepare the input data
     inputs = processor(
@@ -85,11 +81,11 @@ def make_audio_from_sample(model_prompt, audio_sample, output_file='', return_to
     audio_values = model.generate(**inputs, do_sample=True, guidance_scale=3, max_new_tokens=return_token_lengh)
     sampling_rate = model.config.audio_encoder.sampling_rate
 
-    #If no outputfile is specified, return the audio data, otherwise save the file
+    # If no outputfile is specified, return the audio data, otherwise save the file
     if output_file=='':
         return (audio_values, sampling_rate)
     else:
-        #save return to file
+        # Save return to file
         save_wav_file(music_data=audio_values, 
                       sampling_rate=sampling_rate,
                       file_name=output_file)
@@ -127,22 +123,29 @@ def main():
     # Button to generate music
     if st.button('Generate Music') and user_input:
         print(user_input)
+        
         # Generate the audio from text
-        audio_values, sampling_rate = make_audio_from_text(user_input)
-        
-        # Convert the audio values to bytes
-        audio_bytes = wav_to_bytes(audio_values.numpy(), sampling_rate)
-        
-        # Play the audio in the app
-        #st.audio(audio_bytes, format='audio/wav')
-        st.audio(audio_bytes)
-        
-def wav_to_bytes(audio_array, sample_rate):
-    """Converts numpy array to bytes"""
-    byte_io = io.BytesIO()
-    wav.write(byte_io, sample_rate, np.squeeze(audio_array).astype(np.int16))
-    byte_io.seek(0)
-    return byte_io.read()
+        make_audio_from_text(user_input, output_file='text_generated.wav')
+        # Generate the audio from the first file
+        make_audio_from_sample(user_input, audio_sample='text_generated.wav', output_file='sample_generated.wav')
+
+        # Interfaces to play wav files
+        play_wav_file('text_generated.wav')
+        play_wav_file('sample_generated.wav')
+
+def play_wav_file(filename):
+    """Read a wav file and play in Streamlit app"""
+
+    # Check if the file exists
+    if os.path.exists(filename):
+         # Read the file in binary mode
+        with open(filename, "rb") as f:
+            audio_file = f.read()
+
+        # Display audio player in Streamlit app
+        st.audio(audio_file, format='audio/wav')
+    else:
+        st.warning("The specified audio file does not exist.")
 
 if __name__ == "__main__":
     main()

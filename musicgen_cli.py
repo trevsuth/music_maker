@@ -70,17 +70,15 @@ def make_audio_from_sample(model_prompt, audio_sample, output_file='', return_to
         less aurally interesting
     """
     
+    # Declare model
     model="facebook/musicgen-small"
 
+    # Get model from HuggingFace
     processor = AutoProcessor.from_pretrained(model)
     model = MusicgenForConditionalGeneration.from_pretrained(model)
 
     # Read the .wav file
-    sampling_rate, sample = read_wav_file(audio_sample)  # replace with the path to your .wav file
-
-    # Create segments from the audio sample, e.g., first quarter and first half
-    #sample_1 = sample[: len(sample) // 4]
-    #sample_2 = sample[: len(sample) // 2]
+    sampling_rate, sample = read_wav_file(audio_sample)
 
     # Prepare the input data
     inputs = processor(
@@ -95,11 +93,11 @@ def make_audio_from_sample(model_prompt, audio_sample, output_file='', return_to
     audio_values = model.generate(**inputs, do_sample=True, guidance_scale=3, max_new_tokens=return_token_lengh)
     sampling_rate = model.config.audio_encoder.sampling_rate
 
-    #If no outputfile is specified, return the audio data, otherwise save the file
+    # If no outputfile is specified, return the audio data, otherwise save the file
     if output_file=='':
         return (audio_values, sampling_rate)
     else:
-        #save return to file
+        # Save return to file
         save_wav_file(music_data=audio_values, 
                       sampling_rate=sampling_rate,
                       file_name=output_file)
